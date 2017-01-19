@@ -1,5 +1,5 @@
 import requests
-from datetime import datetime
+import datetime
 from pylatex import Document, Section, Subsection, Tabular, Command, base_classes, NoEscape
 import json
 
@@ -21,11 +21,14 @@ def extract_time(json):
 def iso_time_to_datetime(time_str):
     k = time_str.rfind(":")
     time_str = time_str[:k] + time_str[k+1:]
-    return datetime.strptime(time_str, '%Y-%m-%dT%H:%M:%S%z')
+    return datetime.datetime.strptime(time_str, '%Y-%m-%dT%H:%M:%S%z')
 
 
 if __name__ == '__main__':
-    detailed_report = requests.get('https://toggl.com/reports/api/v2/details', params={'user_agent': config["user_agent"], 'workspace_id': config["workspace_id"]}, auth=(config["api_tokens"][0], "api_token")).json()["data"]
+
+    monday = datetime.date.today() + datetime.timedelta(days=-datetime.date.today().weekday())
+
+    detailed_report = requests.get('https://toggl.com/reports/api/v2/details', params={'user_agent': config["user_agent"], 'workspace_id': config["workspace_id"], "since": str(monday)}, auth=(config["api_tokens"][0], "api_token")).json()["data"]
     detailed_report.sort(key=extract_time, reverse=False)  # Sort first by user and then by start time
 
     with doc.create(Subsection('Tidsrapport')):
