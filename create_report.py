@@ -1,6 +1,7 @@
 import requests
 import datetime
 from pylatex import Document, Section, Subsection, Tabular, Command, base_classes, NoEscape, LongTable
+from pylatex.utils import bold
 import json
 
 with open('config.json') as data_file:    
@@ -36,6 +37,8 @@ if __name__ == '__main__':
             rowcolor = "white"
             lastuser = ""
             table.add_hline()
+            table.add_row(["Person", "Aktivitet", "Start", "Slut", "Timmar"], mapper=[bold])
+
 
             for event in detailed_report:
                 # Toggle color between users
@@ -56,7 +59,7 @@ if __name__ == '__main__':
     summary_report += requests.get('https://toggl.com/reports/api/v2/summary', params={'user_agent': config["user_agent"], 'workspace_id': config["workspace_id"][1], "since": str("2017-01-16"), "grouping":"users", "subgrouping": "projects"}, auth=(config["api_tokens"][1], "api_token")).json()["data"]
     with doc.create(Section('Hela projektet')):
         for user in summary_report:
-            doc.append("%s has %.2f hours left. %.2f hours done. \n" % (user["title"]["user"],  400-user["time"]/1000/60/60, user["time"]/1000/60/60))
+            doc.append("%s har %.2f timmar kvar. %.2f timmar avklarade. \n" % (user["title"]["user"],  400-user["time"]/1000/60/60, user["time"]/1000/60/60))
 
 
     doc.generate_pdf('full', clean_tex=False)
