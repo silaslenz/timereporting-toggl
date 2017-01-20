@@ -4,7 +4,7 @@ import json
 import requests
 import create_report
 
-with open('config.json') as data_file:    
+with open('config.json') as data_file:
     config = json.load(data_file)
 
 # constants
@@ -27,6 +27,9 @@ class SlackBot:
         if command.startswith("report"):
             file_name = create_report.generate_report(self.extra_text)
             slack_client.api_call("files.upload", filename=file_name, channels=channel, file=open("full.pdf", "rb"))
+        else:
+            response = "Use *report* to get latest report. Upload a text snippet named report to generate new report."
+            slack_client.api_call("chat.postMessage", channel=channel, text=response, as_user=True)
 
     def parse_slack_output(self,slack_rtm_output):
         """
@@ -42,7 +45,9 @@ class SlackBot:
                     # return text after the @ mention, whitespace removed
                     return output['text'].split(AT_BOT)[1].strip().lower(), \
                            output['channel']
+                # Message was a file and that file was intended for bot (report.txt).
                 if output and "file" in output and "name" in output["file"] and output["file"]["name"] == "report.txt":
+                    # Save file. Use file to generate report and send file
                     self.report_text = requests.get(output["file"]["url_private_download"], headers={'Authorization': "Bearer " + config["slack_key"]}).text
                     file_name = create_report.generate_report(self.report_text)
                     slack_client.api_call("files.upload", filename=file_name, channels=output['channel'], file=open("full.pdf", "rb"))
