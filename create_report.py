@@ -25,7 +25,7 @@ def iso_time_to_datetime(time_str):
     return datetime.datetime.strptime(time_str, '%Y-%m-%dT%H:%M:%S%z')
 
 
-if __name__ == '__main__':
+def generate_report(extra_text=""):
     monday = datetime.date.today() + datetime.timedelta(days=-datetime.date.today().weekday())
 
     detailed_report = requests.get('https://toggl.com/reports/api/v2/details', params={'user_agent': config["user_agent"], 'workspace_id': config["workspace_id"][0], "since": str(monday)}, auth=(config["api_tokens"][0], "api_token")).json()["data"]
@@ -60,6 +60,11 @@ if __name__ == '__main__':
     with doc.create(Section('Hela projektet')):
         for user in summary_report:
             doc.append("%s har %.2f timmar kvar. %.2f timmar avklarade. \n" % (user["title"]["user"],  400-user["time"]/1000/60/60, user["time"]/1000/60/60))
-
-
+    with doc.create(Section('Status')):
+        doc.append(extra_text.replace("\r\n","\n"))
     doc.generate_pdf('full', clean_tex=False)
+
+    return str(monday)+"to"+str(datetime.date.today())+".pdf"
+
+if __name__ == '__main__':
+    generate_report()
