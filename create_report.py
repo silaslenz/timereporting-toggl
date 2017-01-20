@@ -1,6 +1,6 @@
 import requests
 import datetime
-from pylatex import Document, Section, Subsection, Tabular, Command, base_classes, NoEscape
+from pylatex import Document, Section, Subsection, Tabular, Command, base_classes, NoEscape, LongTable
 import json
 
 with open('config.json') as data_file:    
@@ -27,11 +27,12 @@ def iso_time_to_datetime(time_str):
 if __name__ == '__main__':
     monday = datetime.date.today() + datetime.timedelta(days=-datetime.date.today().weekday())
 
-    detailed_report = requests.get('https://toggl.com/reports/api/v2/details', params={'user_agent': config["user_agent"], 'workspace_id': config["workspace_id"], "since": str(monday)}, auth=(config["api_tokens"][0], "api_token")).json()["data"]
+    detailed_report = requests.get('https://toggl.com/reports/api/v2/details', params={'user_agent': config["user_agent"], 'workspace_id': config["workspace_id"][0], "since": str(monday)}, auth=(config["api_tokens"][0], "api_token")).json()["data"]
+    detailed_report += requests.get('https://toggl.com/reports/api/v2/details', params={'user_agent': config["user_agent"], 'workspace_id': config["workspace_id"][1], "since": str(monday)}, auth=(config["api_tokens"][1], "api_token")).json()["data"]
     detailed_report.sort(key=extract_time, reverse=False)  # Sort first by user and then by start time
 
     with doc.create(Subsection('Tidsrapport vecka ' + datetime.datetime.now().strftime("%V"))):
-        with doc.create(Tabular('|l|p{5cm}|l|l|l|')) as table:
+        with doc.create(LongTable('|l|p{5cm}|l|l|l|')) as table:
             rowcolor = "white"
             lastuser = ""
             table.add_hline()
@@ -51,7 +52,8 @@ if __name__ == '__main__':
                 table.add_row([event["user"], event["description"], start_time.strftime("%a %Y-%m-%d kl. %H:%M"), end_time.strftime("%a %Y-%m-%d kl. %H:%M"), end_time-start_time], color=rowcolor)
                 table.add_hline()
 
-    summary_report = requests.get('https://toggl.com/reports/api/v2/summary', params={'user_agent': config["user_agent"], 'workspace_id': config["workspace_id"], "since": str("2017-01-16"), "grouping":"users", "subgrouping": "projects"}, auth=(config["api_tokens"][0], "api_token")).json()["data"]
+    summary_report = requests.get('https://toggl.com/reports/api/v2/summary', params={'user_agent': config["user_agent"], 'workspace_id': config["workspace_id"][0], "since": str("2017-01-16"), "grouping":"users", "subgrouping": "projects"}, auth=(config["api_tokens"][0], "api_token")).json()["data"]
+    summary_report += requests.get('https://toggl.com/reports/api/v2/summary', params={'user_agent': config["user_agent"], 'workspace_id': config["workspace_id"][1], "since": str("2017-01-16"), "grouping":"users", "subgrouping": "projects"}, auth=(config["api_tokens"][1], "api_token")).json()["data"]
     with doc.create(Section('Hela projektet')):
         for user in summary_report:
             doc.append("%s has %.2f hours left. %.2f hours done. \n" % (user["title"]["user"],  400-user["time"]/1000/60/60, user["time"]/1000/60/60))
