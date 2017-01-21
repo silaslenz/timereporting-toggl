@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 import time
 from slackclient import SlackClient
 import json
@@ -16,7 +18,8 @@ slack_client = SlackClient(config["slack_key"])
 
 
 class SlackBot:
-    report_text = ""
+    def __init__(self):
+        self.report_text = ""
 
     def handle_command(self, command, channel):
         """
@@ -25,7 +28,7 @@ class SlackBot:
             returns back what it needs for clarification.
         """
         if command.startswith("report"):
-            file_name = create_report.generate_report(self.extra_text)
+            file_name = create_report.generate_report(self.report_text)
             slack_client.api_call("files.upload", filename=file_name, channels=channel, file=open("full.pdf", "rb"))
         else:
             response = "Use *report* to get latest report. Upload a text snippet named report to generate new report."
@@ -40,7 +43,7 @@ class SlackBot:
         output_list = slack_rtm_output
         if output_list and len(output_list) > 0:
             for output in output_list:
-                print(output)
+#                print(output)
                 if output and 'text' in output and AT_BOT in output['text']:
                     # return text after the @ mention, whitespace removed
                     return output['text'].split(AT_BOT)[1].strip().lower(), \
@@ -48,7 +51,9 @@ class SlackBot:
                 # Message was a file and that file was intended for bot (report.txt).
                 if output and "file" in output and "name" in output["file"] and output["file"]["name"] == "report.txt":
                     # Save file. Use file to generate report and send file
-                    self.report_text = requests.get(output["file"]["url_private_download"], headers={'Authorization': "Bearer " + config["slack_key"]}).text
+                    report = requests.get(output["file"]["url_private_download"], headers={'Authorization': "Bearer " + config["slack_key"]})
+                    report.encoding = "uft-8"
+                    self.report_text = report.text
                     file_name = create_report.generate_report(self.report_text)
                     slack_client.api_call("files.upload", filename=file_name, channels=output['channel'], file=open("full.pdf", "rb"))
         return None, None
