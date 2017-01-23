@@ -28,7 +28,10 @@ class SlackBot:
             returns back what it needs for clarification.
         """
         if command.startswith("report"):
-            file_name = create_report.generate_report(self.report_text)
+            if "last" in command:
+                file_name = create_report.generate_report(self.report_text, lastweek=True)
+            else:
+                file_name = create_report.generate_report(self.report_text)
             slack_client.api_call("files.upload", filename=file_name, channels=channel, file=open("full.pdf", "rb"))
         else:
             response = "Use *report* to get latest report. Upload a text snippet named report to generate new report."

@@ -23,19 +23,25 @@ def iso_time_to_datetime(time_str):
     return datetime.datetime.strptime(time_str, '%Y-%m-%dT%H:%M:%S%z')
 
 
-def generate_report(extra_text=""):
+def generate_report(extra_text="", lastweek=False):
     doc = Document(geometry_options=geometry_options, documentclass =  Command('documentclass', options=base_classes.Options('a4paper'), arguments='article'))
     
-    monday = datetime.date.today() + datetime.timedelta(days=-datetime.date.today().weekday())
+    if lastweek:
+        monday = datetime.date.today() + datetime.timedelta(days=-(datetime.date.today().weekday()+7))
+    else:
+        monday = datetime.date.today() + datetime.timedelta(days=-datetime.date.today().weekday())
+    if lastweek:
+        until = datetime.date.today() + datetime.timedelta(days=-(datetime.date.today().weekday()+1))
+    else:
+        until = datetime.date.today()
 
-    detailed_report = requests.get('https://toggl.com/reports/api/v2/details', params={'user_agent': config["user_agent"], 'workspace_id': config["workspace_id"][0], "since": str(monday)}, auth=(config["api_tokens"][0], "api_token")).json()["data"]
-    detailed_report += requests.get('https://toggl.com/reports/api/v2/details', params={'user_agent': config["user_agent"], 'workspace_id': config["workspace_id"][1], "since": str(monday)}, auth=(config["api_tokens"][1], "api_token")).json()["data"]
+    detailed_report = requests.get('https://toggl.com/reports/api/v2/details', params={'user_agent': config["user_agent"], 'workspace_id': config["workspace_id"][0], "since": str(monday), "until": str(until)}, auth=(config["api_tokens"][0], "api_token")).json()["data"]
+    detailed_report += requests.get('https://toggl.com/reports/api/v2/details', params={'user_agent': config["user_agent"], 'workspace_id': config["workspace_id"][1], "since": str(monday), "until": str(until)}, auth=(config["api_tokens"][1], "api_token")).json()["data"]
     detailed_report.sort(key=extract_time, reverse=False)  # Sort first by user and then by start time
     with doc.create(Section('Status')):
         doc.append(extra_text.replace("\r\n","\n"))
 
-
-    with doc.create(Subsection('Tidsrapport vecka ' + datetime.datetime.now().strftime("%V"))):
+    with doc.create(Subsection('Tidsrapport vecka ' + until.strftime("%V"))):
         with doc.create(LongTable('|l|p{5cm}|l|l|l|')) as table:
             rowcolor = "white"
             lastuser = ""
@@ -65,7 +71,7 @@ def generate_report(extra_text=""):
             doc.append("%s har %.2f timmar kvar. %.2f timmar avklarade. \n" % (user["title"]["user"],  400-user["time"]/1000/60/60, user["time"]/1000/60/60))
     doc.generate_pdf('full', clean=False, clean_tex=False)
 
-    return str(monday)+"to"+str(datetime.date.today())+".pdf"
+    return str(monday)+"to"+str(until)+".pdf"
 
 if __name__ == '__main__':
     generate_report()
