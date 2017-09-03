@@ -1,1 +1,1 @@
-{"workspace_id": 1, "api_tokens": ["2","3"], "user_agent": "email"}
+{"workspace_id": [1, 2], "api_tokens": ["token1", "token2"], "user_agent": "email", "slack_key": "key", "slack_botID": "ID"}
